@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:convert/convert.dart';
 
-import 'package:double_back_to_close_app/double_back_to_close_app.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/foundation.dart';
@@ -176,7 +175,7 @@ class _HomeState extends State<Home> {
 
     return OverlaySupport(
       child: Scaffold(
-        body: DoubleBackToCloseApp(snackBar: const SnackBar(content: Text('Tap back again to leave')), child: CustomScrollView(slivers: children)),
+        body: CustomScrollView(slivers: children),
       ),
     );
   }
@@ -202,7 +201,7 @@ class _HomeState extends State<Home> {
               leading: Icon(Icons.article_outlined),
               title: Text(d.key),
               trailing: Text(filesize(d.size), style: TextStyle(color: Colors.grey)),
-              onTap: ()=> _showAlert(context, d),
+              onTap: () => _showAlert(context, d),
             ),
           );
         },
