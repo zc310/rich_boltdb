@@ -2,6 +2,8 @@
 
 A BoltDB Viewer Flutter project.
 
+![BoltDB Viewer](https://raw.githubusercontent.com/zc310/rich_boltdb/master/assets/windows.png)
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
