@@ -1,4 +1,4 @@
-# rich_boltdb
+# BoltDB Viewer
 
 A [BoltDB](https://github.com/etcd-io/bbolt) Viewer Flutter project.
 
