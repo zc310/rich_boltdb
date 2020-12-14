@@ -1,6 +1,6 @@
 # rich_boltdb
 
-A BoltDB Viewer Flutter project.
+A [BoltDB](https://github.com/etcd-io/bbolt) Viewer Flutter project.
 
 ![BoltDB Viewer](https://raw.githubusercontent.com/zc310/rich_boltdb/master/assets/windows.png)
 
