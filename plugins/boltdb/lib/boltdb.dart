@@ -32,7 +32,7 @@ class DB {
   Future<List<String>> listBucket() async {
     var r = R.fromJson(await BoltDB.execute(P("bucket.list", _closeParams()).toJson()));
     if (r.error != null) {
-      return Future.error(r.error.message);
+      return Future.error(r.error!.message);
     }
     return List<String>.from(r.result);
   }
@@ -56,7 +56,7 @@ class DB {
   Future<List<Doc>> scan(String bucket, String prefix) async {
     var r = R.fromJson(await BoltDB.execute(P("key.scan", _scanParams(bucket, prefix)).toJson()));
     if (r.error != null) {
-      return Future.error(r.error.message);
+      return Future.error(r.error!.message);
     }
     return List<Doc>.from(r.result.map((x) => Doc.fromMap(x)));
   }
@@ -85,7 +85,7 @@ class P {
 }
 
 class Error {
-  Error({this.code, this.message});
+  Error({required this.code, required this.message});
 
   final int code;
   final String message;
@@ -100,7 +100,7 @@ class R {
   R({this.result, this.error});
 
   dynamic result;
-  Error error;
+  Error? error;
 
   factory R.fromJson(String str) => R.fromMap(json.decode(str));
 
@@ -111,7 +111,7 @@ class R {
 }
 
 class Doc {
-  Doc({this.key, this.value, this.size});
+  Doc({required this.key, required this.value, required this.size});
 
   String key;
   String value;

@@ -5,17 +5,16 @@ import 'package:convert/convert.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:filesize/filesize.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:boltdb/boltdb.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_sticky_header/flutter_sticky_header.dart';
-import 'package:overlay_support/overlay_support.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:path/path.dart' as p;
 import 'dart:math' show Random;
+
+import 'package:url_launcher/url_launcher_string.dart';
 
 class MyApp extends StatelessWidget {
   @override
@@ -37,10 +36,10 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   final _qController = TextEditingController();
   String _file = '';
-  var _buckets = List<String>();
+  var _buckets = <String>[];
   var _expansion = Map<String, bool>();
-  var _value = Map<String, List<Doc>>();
-  DB _db;
+  var _value = Map<String, List<Doc>?>();
+  DB? _db;
   bool _search = false;
   String _searchText = "";
 
@@ -80,7 +79,6 @@ class _HomeState extends State<Home> {
                 data: new ThemeData(
                   primaryColor: Colors.white,
                   primaryIconTheme: theme.primaryIconTheme.copyWith(color: Colors.grey),
-                  primaryColorBrightness: Brightness.light,
                   primaryTextTheme: theme.textTheme,
                 ),
                 child: TextField(
@@ -111,27 +109,27 @@ class _HomeState extends State<Home> {
                   children: [
                     IconButton(icon: Icon(Icons.folder_open), onPressed: _openFile),
                     Expanded(
-                      child: FlatButton(
+                      child: TextButton(
                         child: Text("Create a sample database file"),
                         onPressed: () async {
                           Directory tempDir = await getTemporaryDirectory();
                           _file = p.join(tempDir.path, "sample.db");
                           _db = DB(_file);
-                          await _db.createBucket("MyBucket_A");
+                          await _db?.createBucket("MyBucket_A");
                           List.generate(9, (index) => index).toList().forEach((element) {
-                            _db.put("MyBucket_A", "key_A_${element.toString().padLeft(6, "0")}",
+                            _db?.put("MyBucket_A", "key_A_${element.toString().padLeft(6, "0")}",
                                 String.fromCharCodes(List.generate(Random().nextInt(99), (index) => Random().nextInt(99))));
                           });
 
-                          await _db.createBucket("MyBucket_B");
+                          await _db?.createBucket("MyBucket_B");
                           List.generate(9, (index) => index).toList().forEach((element) {
-                            _db.put("MyBucket_B", "key_B_${element.toString().padLeft(6, "0")}",
+                            _db?.put("MyBucket_B", "key_B_${element.toString().padLeft(6, "0")}",
                                 String.fromCharCodes(List.generate(Random().nextInt(99), (index) => Random().nextInt(99))));
                           });
 
-                          await _db.createBucket("MyBucket_C");
+                          await _db?.createBucket("MyBucket_C");
                           List.generate(9, (index) => index).toList().forEach((element) {
-                            _db.put("MyBucket_C", "key_C_${element.toString().padLeft(6, "0")}",
+                            _db?.put("MyBucket_C", "key_C_${element.toString().padLeft(6, "0")}",
                                 String.fromCharCodes(List.generate(Random().nextInt(99), (index) => Random().nextInt(99))));
                           });
 
@@ -150,36 +148,45 @@ class _HomeState extends State<Home> {
                 )),
       SliverToBoxAdapter(child: Divider(height: 1))
     ];
-    _buckets.forEach((bucket) {
-      children.add(SliverStickyHeader(
-        header: ExpansionTile(
-          backgroundColor: theme.cardColor,
-          key: UniqueKey(),
-          leading: Icon(Icons.storage),
-          title: Text(bucket),
-          initiallyExpanded: _expansion[bucket],
-          onExpansionChanged: (value) {
-            if (_value[bucket] == null) {
-              _db.scan(bucket, "").then((value) {
-                _value[bucket] = value;
-              }).catchError((error) => toast(error));
-            }
-            setState(() {
-              _expansion[bucket] = value;
-            });
-          },
-        ),
-        sliver: !_expansion[bucket] ? null : _buildItem(bucket),
-      ));
-    });
-
-    return OverlaySupport(
-      child: Scaffold(
-        body: CustomScrollView(slivers: children),
-      ),
+    _buckets.forEach(
+      (bucket) {
+        children.add(
+          SliverStickyHeader(
+            header: ExpansionTile(
+              backgroundColor: theme.cardColor,
+              key: UniqueKey(),
+              leading: Icon(Icons.storage),
+              title: Text(bucket),
+              initiallyExpanded: _expansion[bucket] ?? false,
+              onExpansionChanged: (value) {
+                if (_value[bucket] == null) {
+                  _db?.scan(bucket, "").then((value) {
+                    _value[bucket] = value;
+                  }).catchError((error){
+                    toast(error);
+                  });
+                }
+                setState(() {
+                  _expansion[bucket] = value;
+                });
+              },
+            ),
+            sliver: !(_expansion[bucket] ?? false) ? null : _buildItem(bucket),
+          ),
+        );
+      },
     );
+
+    return Scaffold(body: CustomScrollView(slivers: children));
   }
 
+  void toast(String value, {int seconds = 3}) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).primaryColor,
+          content: Text(value),
+          duration: Duration(seconds: seconds),
+        ),
+      );
   Widget _buildItem(String bucket) {
     final b = _value[bucket];
     if (b == null) {
@@ -194,7 +201,7 @@ class _HomeState extends State<Home> {
             background: Container(color: Colors.red),
             key: UniqueKey(),
             onDismissed: (direction) {
-              _db.delete(bucket, d.key);
+              _db?.delete(bucket, d.key);
               b.remove(d);
             },
             child: ListTile(
@@ -214,7 +221,7 @@ class _HomeState extends State<Home> {
     _clear();
 
     _db = DB(_file);
-    _db.listBucket().then((value) {
+    _db?.listBucket().then((value) {
       value.forEach((element) {
         _expansion[element] = false;
       });
@@ -222,13 +229,18 @@ class _HomeState extends State<Home> {
       setState(() {
         _buckets = value;
       });
-    }).catchError((error) => toast(error));
+    }).catchError((error) {
+      toast(error);
+    });
   }
 
   void _openFile() {
-    FilePicker.getFile().then((value) {
+    FilePicker.platform.pickFiles().then((value) {
+      if (value == null) {
+        return null;
+      }
       setState(() {
-        _file = value.path;
+        _file = value.files.first.name;
       });
       openFile();
       print(_file);
@@ -239,8 +251,7 @@ class _HomeState extends State<Home> {
     if (_db == null) {
       return;
     }
-    _db.close();
-    _db = null;
+    _db?.close();
 
     setState(() {
       _file = "";
@@ -263,25 +274,32 @@ class _HomeState extends State<Home> {
         _searchText = value;
       }
       _value.keys.forEach((bucket) {
-        _db.scan(bucket, _searchText).then((value) {
+        _db?.scan(bucket, _searchText).then((value) {
           _value[bucket] = value;
           setState(() {
             _expansion[bucket] = value.length > 0;
           });
-        }).catchError((error) => toast(error));
+        }).catchError((error) {
+          toast(error);
+        });
       });
     });
   }
 
   Future _showAlert(BuildContext context, Doc doc) async {
-    return showDialog(context: context, child: new TextView(doc: doc));
+    return showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return new TextView(doc: doc);
+        });
   }
 
   Future<void> _showHelp(BuildContext context) async {
     return showDialog<void>(
-        context: context,
-        barrierDismissible: false, // user must tap button!
-        child: AlertDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
           actions: [
             new ElevatedButton(
               child: Text("Close"),
@@ -292,11 +310,9 @@ class _HomeState extends State<Home> {
           ],
           content: MarkdownBody(
               shrinkWrap: true,
-              onTapLink: (String href) async {
-                if (await canLaunch(href)) {
-                  await launch(href);
-                } else {
-                  throw 'Could not launch $href';
+              onTapLink: (String text, String? href, String title) async {
+                if (href != null) {
+                  await launchUrlString(href, mode: LaunchMode.externalApplication);
                 }
               },
               selectable: true,
@@ -313,14 +329,16 @@ and setting values. That's it.
 [hyc_symas]: https://twitter.com/hyc_symas
 [lmdb]: http://symas.com/mdb/
                         '''),
-        ));
+        );
+      }, // user must tap button!
+    );
   }
 }
 
 class TextView extends StatefulWidget {
   final Doc doc;
 
-  const TextView({Key key, this.doc}) : super(key: key);
+  const TextView({Key? key, required this.doc}) : super(key: key);
   @override
   _TextViewState createState() => _TextViewState();
 }
@@ -371,7 +389,7 @@ class _TextViewState extends State<TextView> {
         controller: TextEditingController(text: value()),
         readOnly: true,
       ),
-      actions: <Widget>[new FlatButton(onPressed: () => Navigator.pop(context), child: new Text('Ok'))],
+      actions: <Widget>[new TextButton(onPressed: () => Navigator.pop(context), child: new Text('Ok'))],
     );
   }
 
@@ -383,10 +401,9 @@ class _TextViewState extends State<TextView> {
         } on Exception catch (e) {
           return '$e';
         }
-        break;
+
       case 2:
         return hex.encode(base64.decode(widget.doc.value));
-        break;
     }
 
     return widget.doc.value;
